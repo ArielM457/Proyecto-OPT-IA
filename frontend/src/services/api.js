@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:7071/api';
+const API_URL = process.env.REACT_APP_API_URL || 'clon-gpt-eqafaxhcb4c3h7ch.canadacentral-01.azurewebsites.net';
 
 // Configuración global de axios
 const apiClient = axios.create({
