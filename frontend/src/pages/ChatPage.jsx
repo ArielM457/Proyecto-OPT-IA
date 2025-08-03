@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Typography } from '@mui/material';
+
 import Sidebar from '../components/slidebar/Sidebar';
 import ChatArea from '../components/chat/ChatArea';
 import useChat from '../hooks/useChat';
