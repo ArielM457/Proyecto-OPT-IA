@@ -1,4 +1,4 @@
-/* chatPage.css */
+/* chat.css */
 .chat-page-container {
   display: flex;
   height: 100vh;
@@ -14,7 +14,7 @@
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  min-width: 0; /* Permite que el contenedor se reduzca */
+  min-width: 0;
 }
 
 /* Área principal del chat */
@@ -33,6 +33,7 @@
   overflow: hidden;
   height: 100vh;
   width: 100%;
+  position: relative;
 }
 
 .chat-header {
@@ -44,7 +45,7 @@
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border-bottom: var(--border-light);
-  flex-shrink: 0; /* Evita que el header se comprima */
+  flex-shrink: 0;
 }
 
 .messages-container {
@@ -55,8 +56,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 0; /* Permite que el contenedor se reduzca */
+  min-height: 0;
   width: 100%;
+  /* Espacio para el input fijo en móviles */
+  padding-bottom: calc(var(--spacing-md) + 80px);
 }
 
 .message {
@@ -106,12 +109,12 @@
   color: var(--text-secondary);
 }
 
-/* Input area - ÁREA CRÍTICA CORREGIDA */
+/* Input area */
 .input-container {
   padding: var(--spacing-lg);
   background-color: var(--bg-secondary);
   border-top: var(--border-light);
-  flex-shrink: 0; /* Evita que el input se comprima */
+  flex-shrink: 0;
   width: 100%;
   position: relative;
   z-index: 1;
@@ -244,17 +247,46 @@
 @media (max-width: 768px) {
   .chat-page-container {
     flex-direction: column;
+    position: relative;
   }
   
   .chat-main-container {
     width: 100vw !important;
     margin-left: 0 !important;
     height: 100vh;
+    position: relative;
   }
 
   .chat-main {
     height: 100vh;
     width: 100%;
+    position: relative;
+  }
+
+  .messages-container {
+    /* Más espacio para el input fijo */
+    padding-bottom: calc(var(--spacing-md) + 90px);
+    height: calc(100vh - 140px); /* Ajuste dinámico de altura */
+  }
+
+  /* Input fijo en la parte inferior para móviles */
+  .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border-top: var(--border-light);
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .input-form {
+    max-width: 100%;
+    gap: var(--spacing-sm);
   }
 
   .message {
@@ -268,15 +300,6 @@
   .message.assistant {
     max-width: 90%;
   }
-
-  .input-container {
-    padding: var(--spacing-md);
-  }
-
-  .input-form {
-    max-width: 100%;
-    gap: var(--spacing-sm);
-  }
 }
 
 /* Ajustes para pantallas muy pequeñas */
@@ -288,6 +311,8 @@
 
   .messages-container {
     padding: var(--spacing-sm);
+    padding-bottom: calc(var(--spacing-sm) + 90px);
+    height: calc(100vh - 130px);
   }
 
   .message {
