@@ -1,5 +1,6 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { v4: uuidv4 } = require('uuid');
+
 const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
@@ -14,6 +15,109 @@ const config = {
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient("chatia");
+const documentsContainerClient = blobServiceClient.getContainerClient("documents");
+
+let keywordMap = null;
+let guideDescriptions = null;
+
+async function loadKeywordsAndDescriptions() {
+    if (keywordMap && guideDescriptions) return { keywordMap, guideDescriptions };
+    
+    const blobClient = containerClient.getBlockBlobClient("names/key-words.txt");
+    if (!await blobClient.exists()) {
+        keywordMap = {};
+        guideDescriptions = {};
+        return { keywordMap, guideDescriptions };
+    }
+
+    const downloadResponse = await blobClient.download();
+    const content = await streamToString(downloadResponse.readableStreamBody);
+    
+    keywordMap = {};
+    guideDescriptions = {};
+    const lines = content.split('\n');
+    let currentSection = null;
+    let currentGuide = null;
+
+    for (const line of lines) {
+        if (line.startsWith('===')) {
+            if (line.includes('DESCRIPCIÓN')) currentSection = 'descriptions';
+            else if (line.includes('PALABRAS CLAVE')) currentSection = 'keywords';
+            continue;
+        }
+
+        if (line.trim() === '') continue;
+        
+        if (currentSection === 'descriptions' && line.includes('-')) {
+            const [guidePart, description] = line.split('-').map(item => item.trim());
+            const guideMatch = guidePart.match(/G\d+/);
+            if (guideMatch) {
+                currentGuide = guideMatch[0];
+                guideDescriptions[currentGuide] = description;
+            }
+        }
+        else if (currentSection === 'keywords' && line.includes('->')) {
+            const [keywords, guide] = line.split('->').map(item => item.trim());
+            keywords.split(',').forEach(keyword => {
+                keywordMap[keyword.trim().toLowerCase()] = guide;
+            });
+        }
+    }
+
+    return { keywordMap, guideDescriptions };
+}
+
+async function checkKeywords(text) {
+    const { keywordMap, guideDescriptions } = await loadKeywordsAndDescriptions();
+    const foundKeywords = {};
+    const lowerText = text.toLowerCase();
+
+    for (const [keyword, guide] of Object.entries(keywordMap)) {
+        if (lowerText.includes(keyword)) {
+            foundKeywords[keyword] = {
+                guide,
+                description: guideDescriptions[guide] || 'Descripción no disponible'
+            };
+        }
+    }
+
+    return foundKeywords;
+}
+
+async function getDocumentInfo(guideId) {
+    try {
+        const blobs = [];
+        for await (const blob of documentsContainerClient.listBlobsFlat({ prefix: guideId })) {
+            blobs.push(blob.name);
+        }
+
+        if (blobs.length > 0) {
+            const blobClient = documentsContainerClient.getBlockBlobClient(blobs[0]);
+            return {
+                url: blobClient.url,
+                filename: blobs[0].split('/').pop()
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting document info:', error);
+        return null;
+    }
+}
+
+async function enhanceAIReponseWithDocuments(content, documents) {
+    if (!documents || documents.length === 0) return content;
+
+    let enhancedResponse = content + "\n\n📚 **Documentos recomendados:**\n";
+    
+    documents.forEach(doc => {
+        enhancedResponse += `\n👉 [${doc.filename}](${doc.url}): ${doc.description}\n`;
+    });
+
+    enhancedResponse += "\nPuedes descargar estos documentos desde los enlaces proporcionados.";
+
+    return enhancedResponse;
+}
 
 module.exports = async function (context, req) {
     context.res = {
@@ -94,7 +198,7 @@ module.exports = async function (context, req) {
             body: JSON.stringify({
                 messages: messages,
                 temperature: 0.7,
-                max_tokens: 500
+                max_tokens: 800
             })
         });
 
@@ -104,10 +208,30 @@ module.exports = async function (context, req) {
             throw new Error(`Error ${response.status}: ${responseData.error?.message || 'Error en la API'}`);
         }
 
+        const keywordsFound = await checkKeywords(question);
+        const documents = [];
+
+        for (const [keyword, docInfo] of Object.entries(keywordsFound)) {
+            const docData = await getDocumentInfo(docInfo.guide);
+            if (docData) {
+                documents.push({
+                    keyword,
+                    guide: docInfo.guide,
+                    description: docInfo.description,
+                    url: docData.url,
+                    filename: docData.filename
+                });
+            }
+        }
+
+        let aiResponseContent = responseData.choices[0]?.message?.content;
+        aiResponseContent = await enhanceAIReponseWithDocuments(aiResponseContent, documents);
+
         const aiResponse = {
             role: 'assistant',
-            content: responseData.choices[0]?.message?.content,
-            timestamp: new Date().toISOString()
+            content: aiResponseContent,
+            timestamp: new Date().toISOString(),
+            documents: documents.length > 0 ? documents : undefined
         };
 
         const updatedHistory = [...history, newMessage, aiResponse];
@@ -119,8 +243,10 @@ module.exports = async function (context, req) {
             history: updatedHistory.map(m => ({
                 role: m.role,
                 content: m.content,
-                timestamp: m.timestamp
-            }))
+                timestamp: m.timestamp,
+                documents: m.documents
+            })),
+            documents: documents.length > 0 ? documents : undefined
         };
 
     } catch (error) {
