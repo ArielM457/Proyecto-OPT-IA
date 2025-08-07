@@ -3,7 +3,6 @@ import ChatHeader from './ChatHeader';
 import MessagesContainer from './MessagesContainer';
 import ChatInput from './ChatInput';
 import DocumentModal from './DocumentModal';
-import { Box } from '@mui/material';
 
 const ChatArea = ({ messages, isLoading, error, onSubmit }) => {
     const [documents, setDocuments] = useState([]);
@@ -20,40 +19,24 @@ const ChatArea = ({ messages, isLoading, error, onSubmit }) => {
     }, [messages]);
 
     return (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            width: '100%',
-            overflow: 'hidden'
-        }}>
+        <div className="chat-main">
             <ChatHeader title="Bienvenido a OPT-IA" />
+            <MessagesContainer 
+                messages={messages}
+                isLoading={isLoading}
+                error={error}
+            />
             
-            <Box sx={{
-                flex: 1,
-                overflowY: 'auto',
-                width: '100%'
-            }}>
-                <MessagesContainer 
-                    messages={messages}
-                    isLoading={isLoading}
-                    error={error}
-                />
-            </Box>
-            
-            <Box sx={{
-                width: '100%',
-                flexShrink: 0
-            }}>
+            <div className="input-container">
                 <ChatInput onSubmit={onSubmit} isLoading={isLoading} />
-            </Box>
+            </div>
 
             <DocumentModal 
                 documents={documents} 
                 open={showDocuments} 
                 onClose={() => setShowDocuments(false)} 
             />
-        </Box>
+        </div>
     );
 };
 
