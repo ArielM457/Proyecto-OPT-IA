@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://app-funtion-gnakajc6h7bkhyas.swedencentral-01.azurewebsites.net/api/';
+const API_URL = process.env.REACT_APP_API_URL || 'https://clon-gpt-eqafaxhcb4c3h7ch.canadacentral-01.azurewebsites.net/api';
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -10,9 +10,9 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(config => {
-    const userId = localStorage.getItem('userId') || 'default-user';
-    if (userId) {
-        config.headers['x-user-id'] = userId;
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
 });
@@ -32,21 +32,25 @@ export const getChatHistory = (userId) => {
 };
 
 export const sendMessage = (userId, message, chatId) => {
+    console.log('Sending message for user:', userId, 'chatId:', chatId);
     return apiClient.post(
         '/functions',
         { question: message, style: "default" },
         {
-            params: { chatId }
+            params: { chatId },
+            headers: { 'x-user-id': userId }
         }
     );
 };
 
 export const loadChat = (userId, chatId) => {
+    console.log('Loading chat for user:', userId, 'chatId:', chatId);
     return apiClient.post(
         '/functions',
         { action: "load_chat" },
         {
-            params: { chatId }
+            params: { chatId },
+            headers: { 'x-user-id': userId }
         }
     );
 };
@@ -74,4 +78,36 @@ export const downloadDocument = (content, filename) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+};
+
+export const loginUser = async (email, password) => {
+    try {
+        const response = await apiClient.post('/auth?action=login', { email, password });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const registerUser = async (nombre, email, telefono, password) => {
+    try {
+        const response = await apiClient.post('/auth?action=register', { nombre, email, telefono, password });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const getUserData = async (userId) => {
+    try {
+        const response = await apiClient.get('/auth', {
+            params: { 
+                action: 'data_user', 
+                id: userId 
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
 };

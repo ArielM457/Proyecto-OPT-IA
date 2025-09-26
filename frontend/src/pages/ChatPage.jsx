@@ -5,7 +5,9 @@ import useChat from '../hooks/useChat';
 import useChatHistory from '../hooks/useChatHistory';
 import '../styles/chatPage.css';
 
-const ChatPage = ({ userId = 'default-user' }) => {
+const ChatPage = () => {
+  const userId = localStorage.getItem('userId') || 'default-user';
+  console.log('Rendering ChatPage for user:', userId);
   
   const { 
     messages, 

@@ -1,0 +1,46 @@
+/* register.css */
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.register-form label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.register-form input:focus {
+  border: 1px solid #0a63c2;
+  box-shadow: 0px 0px 6px rgba(10, 99, 194, 0.4);
+  outline: none;
+}
+
+.register-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: #0a2540;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.register-btn:hover {
+  background: #153e75;
+}

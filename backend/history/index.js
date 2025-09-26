@@ -21,32 +21,55 @@ module.exports = async function (context, req) {
 
         const chatList = [];
         
-        for await (const blob of containerClient.listBlobsByHierarchy('/', { prefix: `${userId}/` })) {
-            if (blob.kind === 'blob') {
-                const blobClient = containerClient.getBlockBlobClient(blob.name);
-                const properties = await blobClient.getProperties();
-                
-                const downloadResponse = await blobClient.download();
-                const history = JSON.parse(await streamToString(downloadResponse.readableStreamBody));
-                const lastMessage = history[history.length - 1]?.content || 'Nuevo chat';
-                
-                chatList.push({
-                    id: blob.name.split('/')[1].replace('.json', ''),
-                    title: lastMessage.substring(0, 50),
-                    lastMessage: properties.lastModified.toISOString(),
-                    preview: lastMessage.substring(0, 100) + (lastMessage.length > 100 ? '...' : '')
-                });
+        console.log(`Buscando blobs con prefijo: ${userId}/`);
+        
+        for await (const blob of containerClient.listBlobsFlat({ prefix: `${userId}/` })) {
+            console.log(`Blob encontrado: ${blob.name}`);
+            
+            if (blob.name.endsWith('.json')) {
+                try {
+                    const blobClient = containerClient.getBlockBlobClient(blob.name);
+                    const properties = await blobClient.getProperties();
+                    
+                    const downloadResponse = await blobClient.download();
+                    const historyContent = await streamToString(downloadResponse.readableStreamBody);
+                    const history = JSON.parse(historyContent);
+                    
+                    if (history && history.length > 0) {
+                        const lastUserMessage = [...history].reverse().find(msg => msg.role === 'user');
+                        const lastMessage = lastUserMessage?.content || 'Nuevo chat';
+                        
+                        const chatId = blob.name.split('/')[1]?.replace('.json', '');
+                        
+                        if (chatId) {
+                            chatList.push({
+                                id: chatId,
+                                title: lastMessage.substring(0, 50),
+                                lastMessage: properties.lastModified.toISOString(),
+                                preview: lastMessage.substring(0, 100) + (lastMessage.length > 100 ? '...' : ''),
+                                messageCount: history.length
+                            });
+                        }
+                    }
+                } catch (parseError) {
+                    console.error(`Error procesando blob ${blob.name}:`, parseError);
+                    continue;
+                }
             }
         }
 
         chatList.sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
 
+        console.log(`Chats encontrados para usuario ${userId}:`, chatList.length);
+
         context.res.body = { 
             chats: chatList,
-            count: chatList.length
+            count: chatList.length,
+            userId: userId 
         };
 
     } catch (error) {
+        console.error('Error en función de historial:', error);
         context.res.status = 500;
         context.res.body = { 
             error: error.message,

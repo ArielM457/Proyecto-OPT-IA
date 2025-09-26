@@ -1,48 +1,28 @@
+
+/* chatPage.css */
 .chat-page-container {
   display: flex;
   height: 100vh;
   position: relative;
-  overflow: hidden;
 }
 
-.chat-main {
+/* Contenedor principal del chat */
+.chat-main-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
-  margin-left: 260px;
-  transition: margin-left 0.3s ease;
+  /* El margin se maneja automáticamente por MUI Drawer */
 }
 
-.sidebar-closed + .chat-main {
-  margin-left: 0;
-}
-
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .chat-page-container {
     flex-direction: column;
   }
   
-  .chat-main {
+  .chat-main-container {
+    width: 100%;
     margin-left: 0 !important;
-    width: 100% !important;
-    height: calc(100vh - 56px); /* Ajuste para el input */
-  }
-}
-@media (max-width: 768px) {
-  .input-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: var(--bg-secondary);
-    z-index: 10;
-    padding: var(--spacing-md);
-    border-top: var(--border-light);
-  }
-
-  .messages-container {
-    padding-bottom: 80px; /* Espacio para el input fijo */
   }
 }
