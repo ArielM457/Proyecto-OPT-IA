@@ -6,7 +6,7 @@ yarn-error.log
 .pnp/
 .pnp.js
 
-local.settings.json # Configuración local de npm
+local.settings.json 
 
 # Directorios de compilación
 build/

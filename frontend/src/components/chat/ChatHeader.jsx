@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Typography, Button, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import UserModal from '../user/userModal';
@@ -12,11 +12,9 @@ const ChatHeader = ({ title }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    checkAuthentication();
-  }, []);
 
-  const checkAuthentication = () => {
+
+const checkAuthentication = useCallback(() => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
     const isAuth = !!token && !!userId;
@@ -25,7 +23,11 @@ const ChatHeader = ({ title }) => {
     if (isAuth) {
       fetchUserData(userId);
     }
-  };
+}, []);
+
+useEffect(() => {
+    checkAuthentication();
+}, [checkAuthentication]);
 
   const fetchUserData = async (userId) => {
     try {
@@ -40,6 +42,8 @@ const ChatHeader = ({ title }) => {
       setLoading(false);
     }
   };
+
+
 
   const handleUserButtonClick = () => {
     if (isAuthenticated) {
